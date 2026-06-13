@@ -1309,13 +1309,10 @@ void usb_disable_device(struct usb_device *dev, int skip_ep0)
 {
 	int i;
 
-	dev_info(&dev->dev, "usb_disable_device, point A\n");
-	
 	/* getting rid of interfaces will disconnect
 	 * any drivers bound to them (a key side effect)
 	 */
 	if (dev->actconfig) {
-		dev_info(&dev->dev, "usb_disable_device, point A1\n");
 		/*
 		 * FIXME: In order to avoid self-deadlock involving the
 		 * bandwidth_mutex, we have to mark all the interfaces
@@ -1324,30 +1321,18 @@ void usb_disable_device(struct usb_device *dev, int skip_ep0)
 		for (i = 0; i < dev->actconfig->desc.bNumInterfaces; i++)
 			dev->actconfig->interface[i]->unregistering = 1;
 
-		dev_info(&dev->dev, "usb_disable_device, point A2\n");
-
 		for (i = 0; i < dev->actconfig->desc.bNumInterfaces; i++) {
 			struct usb_interface	*interface;
 
-			dev_info(&dev->dev, "usb_disable_device, point A2.1\n");
-
 			/* remove this interface if it has been registered */
 			interface = dev->actconfig->interface[i];
-			dev_info(&dev->dev, "usb_disable_device, point A2.2\n");
-			if (!device_is_registered(&interface->dev)) {
-				dev_info(&dev->dev, "usb_disable_device, point A2.2e\n");
+			if (!device_is_registered(&interface->dev))
 				continue;
-			}
-			dev_info(&dev->dev, "usb_disable_device, point A2.3\n");
 			dev_dbg(&dev->dev, "unregistering interface %s\n",
 				dev_name(&interface->dev));
 			remove_intf_ep_devs(interface);
-			dev_info(&dev->dev, "usb_disable_device, point A2.4\n");
 			device_del(&interface->dev);
-			dev_info(&dev->dev, "usb_disable_device, point A2.5\n");
 		}
-
-		dev_info(&dev->dev, "usb_disable_device, point A3\n");
 
 		/* Now that the interfaces are unbound, nobody should
 		 * try to access them.
@@ -1357,37 +1342,19 @@ void usb_disable_device(struct usb_device *dev, int skip_ep0)
 			dev->actconfig->interface[i] = NULL;
 		}
 
-		dev_info(&dev->dev, "usb_disable_device, point A4\n");
-
 		usb_disable_usb2_hardware_lpm(dev);
-
-		dev_info(&dev->dev, "usb_disable_device, point A5\n");
-
 		usb_unlocked_disable_lpm(dev);
-
-		dev_info(&dev->dev, "usb_disable_device, point A6\n");
-
 		usb_disable_ltm(dev);
-
-		dev_info(&dev->dev, "usb_disable_device, point A7\n");
 
 		dev->actconfig = NULL;
 		if (dev->state == USB_STATE_CONFIGURED)
 			usb_set_device_state(dev, USB_STATE_ADDRESS);
-
-		dev_info(&dev->dev, "usb_disable_device, point A8\n");
 	}
-
-	dev_info(&dev->dev, "usb_disable_device, point B\n");
 
 	dev_dbg(&dev->dev, "%s nuking %s URBs\n", __func__,
 		skip_ep0 ? "non-ep0" : "all");
 
-	dev_info(&dev->dev, "usb_disable_device, point C\n");
-
 	usb_disable_device_endpoints(dev, skip_ep0);
-
-	dev_info(&dev->dev, "usb_disable_device, point D\n");
 }
 
 /**

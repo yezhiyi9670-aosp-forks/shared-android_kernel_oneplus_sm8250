@@ -999,31 +999,18 @@ int usb_remove_device(struct usb_device *udev)
 	struct usb_interface *intf;
 	int ret;
 
-	dev_info(&udev->dev, "usb_remove_device, point A");
-
-	if (!udev->parent) {	/* Can't remove a root hub */
-		dev_info(&udev->dev, "usb_remove_device, point Ae");
+	if (!udev->parent)	/* Can't remove a root hub */
 		return -EINVAL;
-	}
 	hub = usb_hub_to_struct_hub(udev->parent);
 	intf = to_usb_interface(hub->intfdev);
 
-	dev_info(&udev->dev, "usb_remove_device, point B");
-
 	ret = usb_autopm_get_interface(intf);
-	if (ret < 0) {
-		dev_info(&udev->dev, "usb_remove_device, point Be");
+	if (ret < 0)
 		return ret;
-	}
-
-	dev_info(&udev->dev, "usb_remove_device, point C");
 
 	set_bit(udev->portnum, hub->removed_bits);
-	dev_info(&udev->dev, "usb_remove_device, point D");
 	hub_port_logical_disconnect(hub, udev->portnum);
-	dev_info(&udev->dev, "usb_remove_device, point E");
 	usb_autopm_put_interface(intf);
-	dev_info(&udev->dev, "usb_remove_device, point F");
 	return 0;
 }
 
@@ -1046,29 +1033,13 @@ static void hub_activate(struct usb_hub *hub, enum hub_activation_type type)
 	bool need_debounce_delay = false;
 	unsigned delay;
 
-	dev_info(&hdev->dev, "hub_activate, stage=%x, quiescing=%x", type, hub->quiescing);
-
 	/* Continue a partial initialization */
 	if (type == HUB_INIT2 || type == HUB_INIT3) {
-		dev_info(&hdev->dev, "hub_activate, I2, point A");
-		/* Is the hub being disconnected and we are just executing flushed delayed job? */
-		if (hub->disconnected) {
-			if(device_trylock(&hdev->dev)) {
-				device_unlock(&hdev->dev);
-				dev_warn(&hdev->dev, "hub_activate: Expected hub to be already locked when being disconnected.");
-			}
-			dev_info(&hdev->dev, "hub_activate, I2, point Ae");
-			return;
-		}
-
 		device_lock(&hdev->dev);
-		dev_info(&hdev->dev, "hub_activate, I2, point B");
 
 		/* Was the hub disconnected while we were waiting? */
-		if (hub->disconnected) {
-			dev_info(&hdev->dev, "hub_activate, I2, point Be");
+		if (hub->disconnected)
 			goto disconnected;
-		}
 		if (type == HUB_INIT2)
 			goto init2;
 		goto init3;
@@ -1324,11 +1295,8 @@ static void hub_activate(struct usb_hub *hub, enum hub_activation_type type)
 	if (type == HUB_INIT2 || type == HUB_INIT3) {
 		/* Allow autosuspend if it was suppressed */
  disconnected:
-		dev_info(&hdev->dev, "hub_activate, I2, point C");
 		usb_autopm_put_interface_async(to_usb_interface(hub->intfdev));
-		dev_info(&hdev->dev, "hub_activate, I2, point D");
 		device_unlock(&hdev->dev);
-		dev_info(&hdev->dev, "hub_activate, I2, point E");
 	}
 
 	if (type == HUB_RESUME && hub_is_superspeed(hub->hdev)) {
@@ -1343,7 +1311,6 @@ static void hub_activate(struct usb_hub *hub, enum hub_activation_type type)
 	}
 
 	kref_put(&hub->kref, hub_release);
-	dev_info(&hdev->dev, "hub_activate, I2, point F");
 }
 
 /* Implement the continuations for the delays above */
@@ -1380,7 +1347,6 @@ static void hub_quiesce(struct usb_hub *hub, enum hub_quiescing_type type)
 	/* hub_wq and related activity won't re-trigger */
 	hub->quiescing = 1;
 
-	dev_info(&hdev->dev, "hub_quiesce, point A");
 	if (type != HUB_SUSPEND) {
 		/* Disconnect all the children */
 		for (i = 0; i < hdev->maxchild; ++i) {
@@ -1389,23 +1355,13 @@ static void hub_quiesce(struct usb_hub *hub, enum hub_quiescing_type type)
 		}
 	}
 
-	dev_info(&hdev->dev, "hub_quiesce, point B");
-
 	/* Stop hub_wq and related activity */
 	flush_delayed_work(&hub->init_work);
-	dev_info(&hdev->dev, "hub_quiesce, point C");
 	usb_kill_urb(hub->urb);
-	dev_info(&hdev->dev, "hub_quiesce, point D");
-	if (hub->has_indicators) {
-		dev_info(&hdev->dev, "hub_quiesce, point D1");
+	if (hub->has_indicators)
 		cancel_delayed_work_sync(&hub->leds);
-	}
-	dev_info(&hdev->dev, "hub_quiesce, point E");
-	if (hub->tt.hub) {
-		dev_info(&hdev->dev, "hub_quiesce, point E1");
+	if (hub->tt.hub)
 		flush_work(&hub->tt.clear_work);
-	}
-	dev_info(&hdev->dev, "hub_quiesce, point F");
 }
 
 static void hub_pm_barrier_for_all_ports(struct usb_hub *hub)
@@ -1782,50 +1738,32 @@ static void hub_disconnect(struct usb_interface *intf)
 	struct usb_device *hdev = interface_to_usbdev(intf);
 	int port1;
 
-	dev_info(&hdev->dev, "hub_disconnect, point A");
-
 	/*
 	 * Stop adding new hub events. We do not want to block here and thus
 	 * will not try to remove any pending work item.
 	 */
 	hub->disconnected = 1;
 
-	dev_info(&hdev->dev, "hub_disconnect, point B");
-
 	/* Disconnect all children and quiesce the hub */
 	hub->error = 0;
 	hub_quiesce(hub, HUB_DISCONNECT);
 
-	dev_info(&hdev->dev, "hub_disconnect, point C");
-
 	mutex_lock(&usb_port_peer_mutex);
-
-	dev_info(&hdev->dev, "hub_disconnect, point D");
 
 	/* Avoid races with recursively_mark_NOTATTACHED() */
 	spin_lock_irq(&device_state_lock);
-	dev_info(&hdev->dev, "hub_disconnect, point E");
 	port1 = hdev->maxchild;
 	hdev->maxchild = 0;
 	usb_set_intfdata(intf, NULL);
-	dev_info(&hdev->dev, "hub_disconnect, point F");
 	spin_unlock_irq(&device_state_lock);
-
-	dev_info(&hdev->dev, "hub_disconnect, point G");
 
 	for (; port1 > 0; --port1)
 		usb_hub_remove_port_device(hub, port1);
 
-	dev_info(&hdev->dev, "hub_disconnect, point H");
-
 	mutex_unlock(&usb_port_peer_mutex);
-
-	dev_info(&hdev->dev, "hub_disconnect, point I");
 
 	if (hub->hdev->speed == USB_SPEED_HIGH)
 		highspeed_hubs--;
-
-	dev_info(&hdev->dev, "hub_disconnect, point J");
 
 	usb_free_urb(hub->urb);
 	kfree(hub->ports);
@@ -1833,16 +1771,12 @@ static void hub_disconnect(struct usb_interface *intf)
 	kfree(hub->status);
 	kfree(hub->buffer);
 
-	dev_info(&hdev->dev, "hub_disconnect, point K");
-
 	pm_suspend_ignore_children(&intf->dev, false);
 
 	if (hub->quirk_disable_autosuspend)
 		usb_autopm_put_interface(intf);
 
 	kref_put(&hub->kref, hub_release);
-
-	dev_info(&hdev->dev, "hub_disconnect, point L");
 }
 
 static bool hub_descriptor_is_sane(struct usb_host_interface *desc)
@@ -2312,15 +2246,9 @@ void usb_disconnect(struct usb_device **pdev)
 	 */
 	pm_runtime_barrier(&udev->dev);
 
-	dev_info(&udev->dev, "USB disconnect, point A\n");
-
 	usb_lock_device(udev);
 
-	dev_info(&udev->dev, "USB disconnect, point B\n");
-
 	hub_disconnect_children(udev);
-
-	dev_info(&udev->dev, "USB disconnect, point C\n");
 
 	/* deallocate hcd/hardware state ... nuking all pending urbs and
 	 * cleaning up all state associated with the current configuration
@@ -2328,14 +2256,8 @@ void usb_disconnect(struct usb_device **pdev)
 	 */
 	dev_dbg(&udev->dev, "unregistering device\n");
 	usb_disable_device(udev, 0);
-
-	dev_info(&udev->dev, "USB disconnect, point D\n");
-	
 	usb_hcd_synchronize_unlinks(udev);
 
-	dev_info(&udev->dev, "USB disconnect, point E\n");
-	
-	dev_info(&udev->dev, "USB disconnect, point F\n");
 	if (udev->parent) {
 		port1 = udev->portnum;
 		hub = usb_hub_to_struct_hub(udev->parent);
@@ -2352,12 +2274,7 @@ void usb_disconnect(struct usb_device **pdev)
 			pm_runtime_get_sync(&port_dev->dev);
 	}
 
-	dev_info(&udev->dev, "USB disconnect, point G\n");
-
 	usb_remove_ep_devs(&udev->ep0);
-
-	dev_info(&udev->dev, "USB disconnect, point H\n");
-
 	usb_unlock_device(udev);
 
 	/* Unregister the device.  The device driver is responsible
@@ -2366,34 +2283,22 @@ void usb_disconnect(struct usb_device **pdev)
 	 */
 	device_del(&udev->dev);
 
-	dev_info(&udev->dev, "USB disconnect, point I\n");
-
 	/* Free the device number and delete the parent's children[]
 	 * (or root_hub) pointer.
 	 */
 	release_devnum(udev);
 
-	dev_info(&udev->dev, "USB disconnect, point J\n");
-
 	/* Avoid races with recursively_mark_NOTATTACHED() */
 	spin_lock_irq(&device_state_lock);
-	dev_info(&udev->dev, "USB disconnect, point K\n");
 	*pdev = NULL;
-	dev_info(&udev->dev, "USB disconnect, point L\n");
 	spin_unlock_irq(&device_state_lock);
 
 	if (port_dev && test_and_clear_bit(port1, hub->child_usage_bits))
 		pm_runtime_put(&port_dev->dev);
 
-	dev_info(&udev->dev, "USB disconnect, point M\n");
-
 	hub_free_dev(udev);
 
-	dev_info(&udev->dev, "USB disconnect, point N\n");
-
 	put_device(&udev->dev);
-
-	dev_info(&udev->dev, "USB disconnect, point O\n");
 }
 
 #ifdef CONFIG_USB_ANNOUNCE_NEW_DEVICES

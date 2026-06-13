@@ -2776,18 +2776,12 @@ void device_del(struct device *dev)
 	struct kobject *glue_dir = NULL;
 	struct class_interface *class_intf;
 
-	dev_info(dev, "device_del, point A\n");
 	device_lock(dev);
-	dev_info(dev, "device_del, point B\n");
 	kill_device(dev);
-	dev_info(dev, "device_del, point C\n");
 	device_unlock(dev);
-	dev_info(dev, "device_del, point D\n");
 
 	if (dev->fwnode && dev->fwnode->dev == dev)
 		dev->fwnode->dev = NULL;
-
-	dev_info(dev, "device_del, point E\n");
 
 	/* Notify clients of device removal.  This call must come
 	 * before dpm_sysfs_remove().
@@ -2796,72 +2790,48 @@ void device_del(struct device *dev)
 		blocking_notifier_call_chain(&dev->bus->p->bus_notifier,
 					     BUS_NOTIFY_DEL_DEVICE, dev);
 
-	dev_info(dev, "device_del, point F\n");
-
 	dpm_sysfs_remove(dev);
-	dev_info(dev, "device_del, point G\n");
 	if (parent)
 		klist_del(&dev->p->knode_parent);
-	dev_info(dev, "device_del, point H\n");
 	if (MAJOR(dev->devt)) {
 		devtmpfs_delete_node(dev);
 		device_remove_sys_dev_entry(dev);
 		device_remove_file(dev, &dev_attr_dev);
 	}
-	dev_info(dev, "device_del, point I\n");
 	if (dev->class) {
 		device_remove_class_symlinks(dev);
 
-		dev_info(dev, "device_del, point I1\n");
 		mutex_lock(&dev->class->p->mutex);
-		dev_info(dev, "device_del, point I2\n");
 		/* notify any interfaces that the device is now gone */
 		list_for_each_entry(class_intf,
 				    &dev->class->p->interfaces, node)
 			if (class_intf->remove_dev)
 				class_intf->remove_dev(dev, class_intf);
-		dev_info(dev, "device_del, point I3\n");
 		/* remove the device from the class list */
 		klist_del(&dev->knode_class);
-		dev_info(dev, "device_del, point I4\n");
 		mutex_unlock(&dev->class->p->mutex);
-		dev_info(dev, "device_del, point I5\n");
 	}
-	dev_info(dev, "device_del, point J\n");
 	device_remove_file(dev, &dev_attr_uevent);
-	dev_info(dev, "device_del, point K\n");
 	device_remove_attrs(dev);
-	dev_info(dev, "device_del, point L\n");
 	bus_remove_device(dev);
-	dev_info(dev, "device_del, point M\n");
 	device_pm_remove(dev);
-	dev_info(dev, "device_del, point N\n");
 	driver_deferred_probe_del(dev);
-	dev_info(dev, "device_del, point O\n");
 	device_remove_properties(dev);
-	dev_info(dev, "device_del, point P\n");
 	device_links_purge(dev);
-	dev_info(dev, "device_del, point Q\n");
 
 	/* Notify the platform of the removal, in case they
 	 * need to do anything...
 	 */
 	if (platform_notify_remove)
 		platform_notify_remove(dev);
-	dev_info(dev, "device_del, point R\n");
 	if (dev->bus)
 		blocking_notifier_call_chain(&dev->bus->p->bus_notifier,
 					     BUS_NOTIFY_REMOVED_DEVICE, dev);
-	dev_info(dev, "device_del, point S\n");
 	kobject_uevent(&dev->kobj, KOBJ_REMOVE);
-	dev_info(dev, "device_del, point T\n");
 	glue_dir = get_glue_dir(dev);
 	kobject_del(&dev->kobj);
-	dev_info(dev, "device_del, point U\n");
 	cleanup_glue_dir(dev, glue_dir);
-	dev_info(dev, "device_del, point V\n");
 	put_device(parent);
-	dev_info(dev, "device_del, point W\n");
 }
 EXPORT_SYMBOL_GPL(device_del);
 
