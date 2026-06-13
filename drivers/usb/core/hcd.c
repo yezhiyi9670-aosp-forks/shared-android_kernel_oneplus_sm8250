@@ -3039,25 +3039,39 @@ void usb_remove_hcd(struct usb_hcd *hcd)
 	usb_get_dev(rhdev);
 	sysfs_remove_group(&rhdev->dev.kobj, &usb_bus_attr_group);
 
+	dev_info(hcd->self.controller, "remove, point A");
+
 	clear_bit(HCD_FLAG_RH_RUNNING, &hcd->flags);
 	if (HC_IS_RUNNING (hcd->state))
 		hcd->state = HC_STATE_QUIESCING;
+
+	dev_info(hcd->self.controller, "remove, point B");
 
 	dev_dbg(hcd->self.controller, "roothub graceful disconnect\n");
 	spin_lock_irq (&hcd_root_hub_lock);
 	hcd->rh_registered = 0;
 	spin_unlock_irq (&hcd_root_hub_lock);
 
+	dev_info(hcd->self.controller, "remove, point C");
+
 #ifdef CONFIG_PM
 	cancel_work_sync(&hcd->wakeup_work);
 #endif
 
+	dev_info(hcd->self.controller, "remove, point D");
+
 	/* handle any pending hub events before XHCI stops */
 	usb_flush_hub_wq();
 
+	dev_info(hcd->self.controller, "remove, point E");
+
 	mutex_lock(&usb_bus_idr_lock);
+	dev_info(hcd->self.controller, "remove, point E1");
 	usb_disconnect(&rhdev);		/* Sets rhdev to NULL */
+	dev_info(hcd->self.controller, "remove, point E2");
 	mutex_unlock(&usb_bus_idr_lock);
+
+	dev_info(hcd->self.controller, "remove, point F");
 
 	/*
 	 * tasklet_kill() isn't needed here because:
@@ -3081,23 +3095,35 @@ void usb_remove_hcd(struct usb_hcd *hcd)
 	hcd->driver->stop(hcd);
 	hcd->state = HC_STATE_HALT;
 
+	dev_info(hcd->self.controller, "remove, point G");
+
 	/* In case the HCD restarted the timer, stop it again. */
 	clear_bit(HCD_FLAG_POLL_RH, &hcd->flags);
 	del_timer_sync(&hcd->rh_timer);
+
+	dev_info(hcd->self.controller, "remove, point H");
 
 	if (usb_hcd_is_primary_hcd(hcd)) {
 		if (hcd->irq > 0)
 			free_irq(hcd->irq, hcd);
 	}
 
+	dev_info(hcd->self.controller, "remove, point I");
+
 	usb_deregister_bus(&hcd->self);
 	hcd_buffer_destroy(hcd);
+
+	dev_info(hcd->self.controller, "remove, point J");
 
 	usb_phy_roothub_power_off(hcd->phy_roothub);
 	usb_phy_roothub_exit(hcd->phy_roothub);
 
+	dev_info(hcd->self.controller, "remove, point K");
+
 	usb_put_invalidate_rhdev(hcd);
 	hcd->flags = 0;
+
+	dev_info(hcd->self.controller, "remove, point L");
 }
 EXPORT_SYMBOL_GPL(usb_remove_hcd);
 

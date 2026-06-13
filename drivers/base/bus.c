@@ -547,26 +547,39 @@ void bus_remove_device(struct device *dev)
 	struct bus_type *bus = dev->bus;
 	struct subsys_interface *sif;
 
-	if (!bus)
+	dev_info(dev, "bus_remove_device, point A\n");
+
+	if (!bus) {
+		dev_info(dev, "bus_remove_device, point Ae\n");
 		return;
+	}
 
 	mutex_lock(&bus->p->mutex);
+	dev_info(dev, "bus_remove_device, point B\n");
 	list_for_each_entry(sif, &bus->p->interfaces, node)
 		if (sif->remove_dev)
 			sif->remove_dev(dev, sif);
+	dev_info(dev, "bus_remove_device, point C\n");
 	mutex_unlock(&bus->p->mutex);
+	dev_info(dev, "bus_remove_device, point D\n");
 
 	sysfs_remove_link(&dev->kobj, "subsystem");
+	dev_info(dev, "bus_remove_device, point E\n");
 	sysfs_remove_link(&dev->bus->p->devices_kset->kobj,
 			  dev_name(dev));
+	dev_info(dev, "bus_remove_device, point F\n");
 	device_remove_groups(dev, dev->bus->dev_groups);
+	dev_info(dev, "bus_remove_device, point G\n");
 	if (klist_node_attached(&dev->p->knode_bus))
 		klist_del(&dev->p->knode_bus);
+	dev_info(dev, "bus_remove_device, point H\n");
 
 	pr_debug("bus: '%s': remove device %s\n",
 		 dev->bus->name, dev_name(dev));
 	device_release_driver(dev);
+	dev_info(dev, "bus_remove_device, point I\n");
 	bus_put(dev->bus);
+	dev_info(dev, "bus_remove_device, point J\n");
 }
 
 static int __must_check add_bind_files(struct device_driver *drv)

@@ -399,11 +399,17 @@ static int usb_unbind_interface(struct device *dev)
 	int i, j, error, r;
 	int lpm_disable_error = -ENODEV;
 
+	dev_info(dev, "usb_unbind_interface, point A");
+	
 	intf->condition = USB_INTERFACE_UNBINDING;
+
+	dev_info(dev, "usb_unbind_interface, point B");
 
 	/* Autoresume for set_interface call below */
 	udev = interface_to_usbdev(intf);
 	error = usb_autoresume_device(udev);
+
+	dev_info(dev, "usb_unbind_interface, point C");
 
 	/* If hub-initiated LPM policy may change, attempt to disable LPM until
 	 * the driver is unbound.  If LPM isn't disabled, that's fine because it
@@ -413,6 +419,8 @@ static int usb_unbind_interface(struct device *dev)
 	if (driver->disable_hub_initiated_lpm)
 		lpm_disable_error = usb_unlocked_disable_lpm(udev);
 
+	dev_info(dev, "usb_unbind_interface, point D");
+
 	/*
 	 * Terminate all URBs for this interface unless the driver
 	 * supports "soft" unbinding and the device is still present.
@@ -420,7 +428,11 @@ static int usb_unbind_interface(struct device *dev)
 	if (!driver->soft_unbind || udev->state == USB_STATE_NOTATTACHED)
 		usb_disable_interface(udev, intf, false);
 
+	dev_info(dev, "usb_unbind_interface, point E, name %x", driver->name);
+
 	driver->disconnect(intf);
+
+	dev_info(dev, "usb_unbind_interface, point F");
 
 	/* Free streams */
 	for (i = 0, j = 0; i < intf->cur_altsetting->desc.bNumEndpoints; i++) {
@@ -439,6 +451,8 @@ static int usb_unbind_interface(struct device *dev)
 		usb_free_streams(intf, eps, j, GFP_KERNEL);
 		kfree(eps);
 	}
+
+	dev_info(dev, "usb_unbind_interface, point G");
 
 	/* Reset other interface state.
 	 * We cannot do a Set-Interface if the device is suspended or
@@ -461,20 +475,30 @@ static int usb_unbind_interface(struct device *dev)
 	}
 	usb_set_intfdata(intf, NULL);
 
+	dev_info(dev, "usb_unbind_interface, point H");
+
 	intf->condition = USB_INTERFACE_UNBOUND;
 	intf->needs_remote_wakeup = 0;
+
+	dev_info(dev, "usb_unbind_interface, point I");
 
 	/* Attempt to re-enable USB3 LPM, if the disable succeeded. */
 	if (!lpm_disable_error)
 		usb_unlocked_enable_lpm(udev);
+
+	dev_info(dev, "usb_unbind_interface, point J");
 
 	/* Unbound interfaces are always runtime-PM-disabled and -suspended */
 	if (driver->supports_autosuspend)
 		pm_runtime_disable(dev);
 	pm_runtime_set_suspended(dev);
 
+	dev_info(dev, "usb_unbind_interface, point H");
+
 	if (!error)
 		usb_autosuspend_device(udev);
+
+	dev_info(dev, "usb_unbind_interface, point I");
 
 	return 0;
 }

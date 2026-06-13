@@ -975,83 +975,128 @@ static void __device_release_driver(struct device *dev, struct device *parent)
 {
 	struct device_driver *drv;
 
+	dev_info(dev, "__device_release_driver, point A\n");
 	drv = dev->driver;
 	if (drv) {
+		dev_info(dev, "__device_release_driver, point B\n");
 		pm_runtime_get_sync(dev);
+		dev_info(dev, "__device_release_driver, point C\n");
 
 		while (device_links_busy(dev)) {
+			dev_info(dev, "__device_release_driver, point C1\n");
 			device_unlock(dev);
+			dev_info(dev, "__device_release_driver, point C2\n");
 			if (parent && dev->bus->need_parent_lock)
 				device_unlock(parent);
 
+			dev_info(dev, "__device_release_driver, point C3\n");
 			device_links_unbind_consumers(dev);
+			dev_info(dev, "__device_release_driver, point C4\n");
 			if (parent && dev->bus->need_parent_lock)
 				device_lock(parent);
 
+			dev_info(dev, "__device_release_driver, point C5\n");
 			device_lock(dev);
+			dev_info(dev, "__device_release_driver, point C6\n");
 			/*
 			 * A concurrent invocation of the same function might
 			 * have released the driver successfully while this one
 			 * was waiting, so check for that.
 			 */
 			if (dev->driver != drv) {
+				dev_info(dev, "__device_release_driver, point C6e.1\n");
 				pm_runtime_put(dev);
+				dev_info(dev, "__device_release_driver, point C6e.2\n");
 				return;
 			}
+			dev_info(dev, "__device_release_driver, point C7\n");
 		}
+
+		dev_info(dev, "__device_release_driver, point D\n");
 
 		pm_runtime_clean_up_links(dev);
 
+		dev_info(dev, "__device_release_driver, point E\n");
+
 		driver_sysfs_remove(dev);
+
+		dev_info(dev, "__device_release_driver, point F\n");
 
 		if (dev->bus)
 			blocking_notifier_call_chain(&dev->bus->p->bus_notifier,
 						     BUS_NOTIFY_UNBIND_DRIVER,
 						     dev);
 
+		dev_info(dev, "__device_release_driver, point G\n");
+
 		pm_runtime_put_sync(dev);
 
-		if (dev->bus && dev->bus->remove)
+		dev_info(dev, "__device_release_driver, point H\n");
+
+		if (dev->bus && dev->bus->remove) {
+			dev_info(dev, "__device_release_driver, point Hb1, name %s\n", dev->bus->name);
 			dev->bus->remove(dev);
-		else if (drv->remove)
+		} else if (drv->remove) {
+			dev_info(dev, "__device_release_driver, point Hb2, name %s\n", drv->name);
 			drv->remove(dev);
+		}
+		
+		dev_info(dev, "__device_release_driver, point I\n");
 
 		devres_release_all(dev);
+		dev_info(dev, "__device_release_driver, point J\n");
 		dma_deconfigure(dev);
+		dev_info(dev, "__device_release_driver, point K\n");
 		dev->driver = NULL;
 		dev_set_drvdata(dev, NULL);
 		if (dev->pm_domain && dev->pm_domain->dismiss)
 			dev->pm_domain->dismiss(dev);
+		dev_info(dev, "__device_release_driver, point L\n");
 		pm_runtime_reinit(dev);
+		dev_info(dev, "__device_release_driver, point M\n");
 		dev_pm_set_driver_flags(dev, 0);
+		dev_info(dev, "__device_release_driver, point N\n");
 
 		device_links_driver_cleanup(dev);
 
+		dev_info(dev, "__device_release_driver, point O\n");
+
 		klist_remove(&dev->p->knode_driver);
+		dev_info(dev, "__device_release_driver, point P\n");
 		device_pm_check_callbacks(dev);
+		dev_info(dev, "__device_release_driver, point Q\n");
 		if (dev->bus)
 			blocking_notifier_call_chain(&dev->bus->p->bus_notifier,
 						     BUS_NOTIFY_UNBOUND_DRIVER,
 						     dev);
+		dev_info(dev, "__device_release_driver, point R\n");
 
 		kobject_uevent(&dev->kobj, KOBJ_UNBIND);
+		dev_info(dev, "__device_release_driver, point S\n");
 	}
+	dev_info(dev, "__device_release_driver, point Ae\n");
 }
 
 void device_release_driver_internal(struct device *dev,
 				    struct device_driver *drv,
 				    struct device *parent)
 {
+	dev_info(dev, "device_release_driver_internal, point A\n");
 	if (parent && dev->bus->need_parent_lock)
 		device_lock(parent);
 
+	dev_info(dev, "device_release_driver_internal, point B\n");
 	device_lock(dev);
+	dev_info(dev, "device_release_driver_internal, point C\n");
 	if (!drv || drv == dev->driver)
 		__device_release_driver(dev, parent);
+	dev_info(dev, "device_release_driver_internal, point D\n");
 
 	device_unlock(dev);
+	dev_info(dev, "device_release_driver_internal, point E\n");
 	if (parent && dev->bus->need_parent_lock)
 		device_unlock(parent);
+	dev_info(dev, "device_release_driver_internal, point F\n");
 }
 
 /**
