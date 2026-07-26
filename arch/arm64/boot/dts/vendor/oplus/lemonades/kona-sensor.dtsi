@@ -48,7 +48,7 @@
 			sensor-type = <3>; // OPLUS_LIGHT
 			bus-number = <5>;
 			irq-number = <122>;
-			als-type = <3>; // 1 - normal; 2 - under screen; 3 - normal needed compensation
+			als-type = <0>; // 1 - normal; 2 - under screen; 3 - normal needed compensation; 0 - ???
 			is-unit-device = <1>; // 1 - alsps unit device; 0 - separate device
 			is-als-dri = <0>; // 0 - polling; 1 - irq
 			als-factor = <116>;
