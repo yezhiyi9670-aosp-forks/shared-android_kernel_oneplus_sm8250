@@ -725,6 +725,8 @@
 				       <21 54>;
 
 	oplus,dsi-aod-low-brightness-threshold = <21>;
+
+	oplus,bl_interpolate_nosub;
 };
 
 &soc {
