@@ -800,6 +800,83 @@ int sde_crtc_set_onscreenfinger_defer_sync(struct drm_crtc_state *crtc_state,
 
 extern int dc_apollo_enable;
 
+static inline s32 oplus_pcc_const_signed(u32 hw_val)
+{
+	// PCC_CONST_COEFF_MASK is 0xFFFF, indicating value field is 16bits
+	u32 field = hw_val & 0xFFFF;
+    s32 value = (field ^ 0x8000U) - 0x8000U;
+	return value;
+}
+
+/*
+ * SDE on kona (SM8250) is a 10-bit pipeline: the LM color-fill registers and
+ * the DSPP PCC input carry 10-bit colors, so full scale is 1023.
+ * sde_hw_lm_setup_dim_layer() left-aligns the 10-bit value into the 12-bit
+ * register field with (color << 2), confirming the 10-bit representation.
+ */
+#define OPLUS_PCC_COLOR_BITS 10
+#define OPLUS_PCC_COLOR_MAX ((1 << OPLUS_PCC_COLOR_BITS) - 1)
+/* black must map to at least 60% of full scale to be obviously not black */
+#define OPLUS_PCC_BLACK_MIN ((OPLUS_PCC_COLOR_MAX * 60) / 100)
+
+/*
+ * Detect whether the DSPP PCC transform involves a color inversion.
+ *
+ * Inversion is the only PCC use case that maps black to an obvious non-black
+ * color;
+ * every other PCC feature (Extra Dim, Night Light, Gamut) keeps black black.
+ * (LiveDisplay brightness or contrast adjustments might also make black
+ *  not so black, but if that would happen, LiveDisplay will disable such
+ *  adjustment automatically in fingerprint mode.)
+ * So we just check whether black is transformed into an obviously non-block
+ * color. This is done by checking constant terms, since all other PCC terms
+ * are effectively zero.
+ *
+ * When inversion is considered involved,
+ * const_terms (size-3 array, indexed R,G,B), if non-null, receives the constant
+ * terms of the PCC transform.
+ *
+ * Inversion is always considered not involved if oplus_pcc_enabled is false,
+ * but could still be considered involved when oplus_skip_pcc is true.
+ */
+static bool oplus_pcc_involves_invert(unsigned int *const_terms)
+{
+	const struct drm_msm_pcc *pcc = &oplus_save_pcc;
+	const struct drm_msm_pcc_coeff *ch[3] = {
+		&pcc->r, &pcc->g, &pcc->b
+	};
+	const u32 cst_raw[3] = { ch[0]->c, ch[1]->c, ch[2]->c };
+	s64 consts[3] = { 0, 0, 0 };
+	bool is_invert = false;
+	u32 i;
+
+	if (!oplus_pcc_enabled)
+		return false;
+
+	for (i = 0; i < 3; i++) {
+		s32 cs;
+
+		cs = oplus_pcc_const_signed(cst_raw[i]) * OPLUS_PCC_COLOR_MAX / 0x7FFF;
+		consts[i] = cs;
+	}
+
+	for (i = 0; i < 3; i++) {
+		if (!consts[i])
+			continue;
+		if (consts[i] > OPLUS_PCC_COLOR_MAX)
+			consts[i] = OPLUS_PCC_COLOR_MAX;
+		if (const_terms)
+			const_terms[i] = consts[i];
+		if (consts[i] >= OPLUS_PCC_BLACK_MIN)
+			is_invert = true;
+	}
+
+	if (is_invert)
+		pr_debug("oplus pcc invert detected consts=%lld %lld %lld\n",
+			 consts[0], consts[1], consts[2]);
+	return is_invert;
+}
+
 int sde_crtc_config_fingerprint_dim_layer(struct drm_crtc_state *crtc_state,
 					  int stage)
 {
@@ -867,6 +944,16 @@ bool is_skip_pcc(struct drm_crtc *crtc)
 {
 	// if (sde_crtc_get_fingerprint_pressed(crtc->state))
 	// 	return true;
+
+	if (
+		sde_crtc_get_fingerprint_mode(crtc->state) &&
+		oplus_pcc_involves_invert(NULL)
+	) {
+		// Display Inversion will invert fingerprint mode dim layer as well,
+		// which is very undesirable. Skip PCC at all if Display Inversion
+		// is detected.
+		return true;
+	}
 
 	return false;
 }
