@@ -1498,7 +1498,7 @@ int interpolate(int x, int xa, int xb, int ya, int yb, bool nosub)
 	factor = bf / 2;
 	plus = bf % 2;
 	if ((!nosub) && (xa - xb) && (yb - ya))
-		sub = 2 * (x - xa) * (x - xb) / (yb - ya) / (xa - xb);
+		sub = (yb - ya) * (x - xa) * (x - xb) / (xb - xa) / (xa - xb);
 
 	return ya + factor + plus + sub;
 }
