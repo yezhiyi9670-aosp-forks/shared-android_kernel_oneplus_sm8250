@@ -708,7 +708,9 @@
 				   <3583 10>,
 				   <4095 0>;
 
-	oplus,dsi-aod-high-brightness = <4 180>,
+	oplus,dsi-aod-high-brightness = <0 0xff>,
+					<2 197>,
+					<4 180>,
 					<13 168>,
 					<21 152>,
 					<29 135>,
@@ -720,7 +722,9 @@
 					<117 55>,
 					<133 44>;
 
-	oplus,dsi-aod-low-brightness = <4 108>,
+	oplus,dsi-aod-low-brightness = <0 0xff>,
+				       <2 141>,
+				       <4 108>,
 				       <13 70>,
 				       <21 54>;
 
