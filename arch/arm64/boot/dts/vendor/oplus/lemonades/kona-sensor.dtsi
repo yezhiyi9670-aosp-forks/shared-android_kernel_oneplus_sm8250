@@ -48,24 +48,10 @@
 			sensor-type = <3>; // OPLUS_LIGHT
 			bus-number = <5>;
 			irq-number = <122>;
-			als-type = <0>; // 1 - normal; 2 - under screen; 3 - normal needed compensation; 0 - ???
+			als-type = <3>; // 1 - normal; 2 - under screen; 3 - normal needed compensation
 			is-unit-device = <1>; // 1 - alsps unit device; 0 - separate device
 			is-als-dri = <0>; // 0 - polling; 1 - irq
 			als-factor = <116>;
-			is_als_initialed = <0>;
-			als_buffer_length = <10>;
-		};
-
-		lsensor@1 {
-			sensor-name = <0x01>; // STK33502
-			sensor-index = <1>;
-			sensor-type = <3>; // OPLUS_LIGHT
-			bus-number = <5>;
-			irq-number = <122>;
-			als-type = <1>; // 1 - normal; 2 - under screen; 3 - normal needed compensation; 0 - ???
-			is-unit-device = <1>; // 1 - alsps unit device; 0 - separate device
-			is-als-dri = <0>; // 0 - polling; 1 - irq
-			als-factor = <75>;
 			is_als_initialed = <0>;
 			als_buffer_length = <10>;
 		};
