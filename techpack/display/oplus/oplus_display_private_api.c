@@ -2646,6 +2646,21 @@ int dsi_display_oplus_set_power(struct drm_connector *connector, int power_mode,
 			}
 			rc = dsi_panel_set_nolp(display->panel);
 			set_oplus_display_scene(OPLUS_DISPLAY_NORMAL_SCENE);
+			/*
+			 * Backlight writes are ignored while in AOD, so the
+			 * panel's brightness register may be left stale (zero)
+			 * if the panel went through a full power-off cycle
+			 * during doze (e.g. proximity sensor cover). Re-apply
+			 * the last backlight level when exiting AOD so the
+			 * panel does not wake up with a black screen.
+			 */
+			if (!strcmp(display->panel->oplus_priv.vendor_name,
+				    "AMB655X") &&
+			    !sde_crtc_get_fingerprint_mode(
+				    connector->state->crtc->state)) {
+				oplus_panel_update_backlight_unlock(
+					display->panel);
+			}
 		}
 		if (!strcmp(display->panel->oplus_priv.vendor_name,
 			    "S6E3HC3")) {
